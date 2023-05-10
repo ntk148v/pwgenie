@@ -55,7 +55,7 @@ lint: ## golangci-lint
 .PHONY: test
 test: ## go test
 	$(call print-target)
-	go test ./...
+	go test ./... -v
 
 .PHONY: diff
 diff: ## git diff

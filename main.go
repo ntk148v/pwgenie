@@ -272,6 +272,9 @@ func randElement(r *rand.Rand, s string) string {
 
 // randInsert randonly insert an element into given string
 func randInsert(r *rand.Rand, s, e string) string {
+	if s == "" {
+		return e
+	}
 	pos := r.Intn(len(s) + 1)
 	return s[0:pos] + e + s[pos:]
 }

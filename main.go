@@ -65,10 +65,10 @@ func main() {
 
 	// Random
 	random := flag.NewFlagSet("random", flag.ExitOnError)
-	characters := random.Int("chars", 8, "The number of characters in the generated password")
+	lenChars := random.Int("length", 8, "The number of characters in the generated password")
 	hasUpper := random.Bool("upper", false, "Enable the inclusion of upper-case letters in the generated passwords")
-	hasNum := random.Bool("num", false, "Enable the inclusion of numbers in the generated password")
-	hasSymb := random.Bool("symb", false, "Enable the inclusion of symbols in the generated password")
+	hasDigits := random.Bool("num", false, "Enable the inclusion of numbers in the generated password")
+	hasSymbols := random.Bool("symb", false, "Enable the inclusion of symbols in the generated password")
 	random.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Generate a random password with specified complexity\n\n")
 		fmt.Fprintf(os.Stderr, "Usage of '%s random':\n", os.Args[0])
@@ -82,7 +82,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Usage of '%s pin':\n", os.Args[0])
 		pin.PrintDefaults()
 	}
-	numbers := pin.Int("num", 6, "The number of digits in the generated PIN code")
+	lenNum := pin.Int("length", 6, "The number of digits in the generated PIN code")
 
 	if len(os.Args) < 2 {
 		printHelp()
@@ -100,10 +100,10 @@ func main() {
 		pass = genHuman(r, *words, *separator, *capitalize)
 	case "random":
 		random.Parse(os.Args[2:])
-		pass = genRandom(r, *characters, *hasUpper, *hasNum, *hasSymb)
+		pass = genRandom(r, *lenChars, *hasUpper, *hasDigits, *hasSymbols)
 	case "pin":
 		pin.Parse(os.Args[2:])
-		pass = genPIN(r, *numbers)
+		pass = genPIN(r, *lenNum)
 	default:
 		printHelp()
 	}
@@ -122,7 +122,7 @@ func main() {
 func genHuman(r *rand.Rand, words int, separator string, capitalize bool) string {
 	var (
 		formatted []string
-		pass      string
+		result    string
 	)
 	// Multiple choices from word list
 	for i := 0; i < words; i++ {
@@ -130,48 +130,98 @@ func genHuman(r *rand.Rand, words int, separator string, capitalize bool) string
 	}
 
 	// Join the formatted words with the separator
-	pass = strings.Join(formatted, separator)
+	result = strings.Join(formatted, separator)
 
 	// Capitalize the result if requested
 	if capitalize {
-		pass = cases.Title(language.English).String(pass)
+		result = cases.Title(language.English).String(result)
+	}
+
+	return result
+}
+
+// genRandom generates a password with the given number of characters
+// using the given character sets.
+// This follows Agiles 1Password: https://discussions.agilebits.com/discussion/23842/how-random-are-the-generated-passwords
+func genRandom(r *rand.Rand, length int, hasUpper, hasDigits, hasSymbols bool) string {
+	var (
+		numLowerChars, numUpperChars, numDigits, numSymbols int
+		result                                              string
+	)
+
+	if hasUpper {
+		// Randomly choice number of upper characters in result
+		// At least one upper character should be included in result
+		numUpperChars = r.Intn(length-4) + 1
+	}
+
+	if hasDigits {
+		// Randomly choice number of digits in result
+		// At least one digit should be included in result
+		numDigits = r.Intn(length-numUpperChars-3) + 1
+	}
+
+	if hasSymbols {
+		// Randomly choice number of symbols in result
+		// At least one symbol should be included in result
+		numSymbols = r.Intn(length-numDigits-numUpperChars-2) + 1
+	}
+
+	// the rest are lower character
+	numLowerChars = length - numDigits - numSymbols - numUpperChars
+
+	// Lower characters
+	for i := 0; i < numLowerChars; i++ {
+		ch := randElement(r, LowerLetters)
+		// TODO(kiennt2609): Check repeat!
+		result = randInsert(r, result, ch)
+	}
+
+	// Upper characters
+	for i := 0; i < numUpperChars; i++ {
+		ch := randElement(r, UpperLetters)
+		// TODO(kiennt2609): Check repeat!
+		result = randInsert(r, result, ch)
+	}
+
+	// Digits
+	for i := 0; i < numDigits; i++ {
+		ch := randElement(r, Digits)
+		// TODO(kiennt2609): Check repeat!
+		result = randInsert(r, result, ch)
+	}
+
+	// Symbols
+	for i := 0; i < numSymbols; i++ {
+		ch := randElement(r, Symbols)
+		// TODO(kiennt2609): Check repeat!
+		result = randInsert(r, result, ch)
+	}
+
+	return result
+}
+
+// genPIN generates a PIN with the given number of numbers
+func genPIN(r *rand.Rand, num int) string {
+	var pass string
+
+	// Digits
+	for i := 0; i < num; i++ {
+		ch := randElement(r, Digits)
+		// TODO(kiennt2609): Check repeat!
+		pass = randInsert(r, pass, ch)
 	}
 
 	return pass
 }
 
-// genRandom generates a password with the given number of characters
-// using the given character sets.
-func genRandom(r *rand.Rand, chars int, hasUpper, hasNum, hasSymb bool) string {
-	var letters string
-	letters = LowerLetters
-	if hasUpper {
-		letters += UpperLetters
-	}
-
-	if hasSymb {
-		letters += SymbolLetters
-	}
-
-	if hasNum {
-		letters += NumberLetters
-	}
-
-	b := make([]byte, chars)
-	for i := range b {
-		b[i] = letters[r.Intn(len(letters))]
-	}
-
-	return string(b)
+// randElement randonly gets an element from given string string
+func randElement(r *rand.Rand, s string) string {
+	return string(s[r.Intn(len(s))])
 }
 
-// genPIN generates a PIN with the given number of numbers
-func genPIN(r *rand.Rand, num int) string {
-	letters := NumberLetters
-	b := make([]byte, num)
-	for i := range b {
-		b[i] = letters[r.Intn(len(letters))]
-	}
-
-	return string(b)
+// randInsert randonly insert an element into given string
+func randInsert(r *rand.Rand, s, e string) string {
+	pos := r.Intn(len(s) + 1)
+	return s[0:pos] + e + s[pos:]
 }

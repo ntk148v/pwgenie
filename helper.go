@@ -1,10 +1,17 @@
 package main
 
 const (
-	LowerLetters  = "abcdefghijklmnopqrstuvwxyz"
-	UpperLetters  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	NumberLetters = "0123456789"
-	SymbolLetters = "!@#$%^&*()-_+[]{}"
+	// LowerLetters is the list of lowercase letters.
+	LowerLetters = "abcdefghijklmnopqrstuvwxyz"
+
+	// UpperLetters is the list of uppercase letters.
+	UpperLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+	// Digits is the list of permitted digits.
+	Digits = "0123456789"
+
+	// Symbols is the list of symbols.
+	Symbols = "~!@#$%^&*()_+`-={}|[]\\:\"<>?,./"
 )
 
 // EFF's wordlist - <https://www.eff.org/deeplinks/2016/07/new-wordlists-random-passphrases>

@@ -88,18 +88,22 @@ func main() {
 		printHelp()
 	}
 
+	// Init Rand that uses random values from src
+	// to generate other random values.
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+
 	var pass string
 
 	switch os.Args[1] {
 	case "human":
 		human.Parse(os.Args[2:])
-		pass = genHuman(*words, *separator, *capitalize)
+		pass = genHuman(r, *words, *separator, *capitalize)
 	case "random":
 		random.Parse(os.Args[2:])
-		pass = genRandom(*characters, *hasUpper, *hasNum, *hasSymb)
+		pass = genRandom(r, *characters, *hasUpper, *hasNum, *hasSymb)
 	case "pin":
 		pin.Parse(os.Args[2:])
-		pass = genPIN(*numbers)
+		pass = genPIN(r, *numbers)
 	default:
 		printHelp()
 	}
@@ -115,13 +119,12 @@ func main() {
 // genHuman generates a password with the given number of words, separated by the given
 // separator.
 // If capitalize is true, each word will be capitalized.
-func genHuman(words int, separator string, capitalize bool) string {
+func genHuman(r *rand.Rand, words int, separator string, capitalize bool) string {
 	var (
 		formatted []string
 		pass      string
 	)
 	// Multiple choices from word list
-	r := rand.New(rand.NewSource(time.Now().Unix()))
 	for i := 0; i < words; i++ {
 		formatted = append(formatted, EFFWords[r.Intn(len(EFFWords))])
 	}
@@ -139,7 +142,7 @@ func genHuman(words int, separator string, capitalize bool) string {
 
 // genRandom generates a password with the given number of characters
 // using the given character sets.
-func genRandom(chars int, hasUpper, hasNum, hasSymb bool) string {
+func genRandom(r *rand.Rand, chars int, hasUpper, hasNum, hasSymb bool) string {
 	var letters string
 	letters = LowerLetters
 	if hasUpper {
@@ -154,7 +157,6 @@ func genRandom(chars int, hasUpper, hasNum, hasSymb bool) string {
 		letters += NumberLetters
 	}
 
-	r := rand.New(rand.NewSource(time.Now().Unix()))
 	b := make([]byte, chars)
 	for i := range b {
 		b[i] = letters[r.Intn(len(letters))]
@@ -164,9 +166,8 @@ func genRandom(chars int, hasUpper, hasNum, hasSymb bool) string {
 }
 
 // genPIN generates a PIN with the given number of numbers
-func genPIN(num int) string {
+func genPIN(r *rand.Rand, num int) string {
 	letters := NumberLetters
-	r := rand.New(rand.NewSource(time.Now().Unix()))
 	b := make([]byte, num)
 	for i := range b {
 		b[i] = letters[r.Intn(len(letters))]

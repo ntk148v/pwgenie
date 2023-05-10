@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/atotto/clipboard"
+	"golang.org/x/exp/slices"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -143,7 +144,14 @@ func genHuman(r *rand.Rand, words int, separator string, capitalize, allowRepeat
 	)
 	// Multiple choices from word list
 	for i := 0; i < words; i++ {
-		formatted = append(formatted, EFFWords[r.Intn(len(EFFWords))])
+		word := EFFWords[r.Intn(len(EFFWords))]
+
+		if !allowRepeat && slices.Contains(formatted, word) {
+			i--
+			continue
+		}
+
+		formatted = append(formatted, word)
 	}
 
 	// Join the formatted words with the separator
@@ -190,28 +198,48 @@ func genRandom(r *rand.Rand, length int, hasUpper, hasDigits, hasSymbols, allowR
 	// Lower characters
 	for i := 0; i < numLowerChars; i++ {
 		ch := randElement(r, LowerLetters)
-		// TODO(kiennt2609): Check repeat!
+
+		if !allowRepeat && strings.Contains(result, ch) {
+			i--
+			continue
+		}
+
 		result = randInsert(r, result, ch)
 	}
 
 	// Upper characters
 	for i := 0; i < numUpperChars; i++ {
 		ch := randElement(r, UpperLetters)
-		// TODO(kiennt2609): Check repeat!
+
+		if !allowRepeat && strings.Contains(result, ch) {
+			i--
+			continue
+		}
+
 		result = randInsert(r, result, ch)
 	}
 
 	// Digits
 	for i := 0; i < numDigits; i++ {
 		ch := randElement(r, Digits)
-		// TODO(kiennt2609): Check repeat!
+
+		if !allowRepeat && strings.Contains(result, ch) {
+			i--
+			continue
+		}
+
 		result = randInsert(r, result, ch)
 	}
 
 	// Symbols
 	for i := 0; i < numSymbols; i++ {
 		ch := randElement(r, Symbols)
-		// TODO(kiennt2609): Check repeat!
+
+		if !allowRepeat && strings.Contains(result, ch) {
+			i--
+			continue
+		}
+
 		result = randInsert(r, result, ch)
 	}
 
@@ -225,7 +253,12 @@ func genPIN(r *rand.Rand, length int, allowRepeat bool) string {
 	// Digits
 	for i := 0; i < length; i++ {
 		ch := randElement(r, Digits)
-		// TODO(kiennt2609): Check repeat!
+
+		if !allowRepeat && strings.Contains(result, ch) {
+			i--
+			continue
+		}
+
 		result = randInsert(r, result, ch)
 	}
 

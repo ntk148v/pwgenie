@@ -8,31 +8,46 @@ import (
 	"strings"
 	"time"
 
+	"github.com/atotto/clipboard"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
-
-func exitErr(msg string) {
-	fmt.Fprintln(os.Stderr, msg)
-	os.Exit(1)
-}
 
 func printHelp() {
 	var helpText = `
 pwgenie is a simple password generator.
 <https://github.com/ntk148v/pwgenie>
 
-Usage:
-  %s <SUBCOMMAND> <OPTIONS>
+Usage
+-----
 
-Subcommands:
+  pwgenie <SUBCOMMAND> [OPTIONS]
+
+Subcommands
+-----------
+
   human    Generate a human-friendly memorable password
   random   Generate a random password with specified complexity
   pin      Generate a random numeric PIN code
 
-Run subcommand with '-h' for arguments.
+Run subcommand with '-h' for subcommand's options.
+
+Example
+-------
+
+  $ pwgenie human
+  trade clash striking underdog arbitrate
+
+  $ pwgenie human -sep -
+  preplan-mousiness-joining-eskimo-linguist
+
+  $ pwgenie random
+  bwuelvko
+
+  $ pwgenie random -symb -num -upper
+  _U*HkTzA
 `
-	fmt.Fprintln(os.Stderr, fmt.Sprintf(helpText, os.Args[0]))
+	fmt.Fprintln(os.Stderr, helpText)
 	os.Exit(0)
 }
 
@@ -73,18 +88,27 @@ func main() {
 		printHelp()
 	}
 
+	var pass string
+
 	switch os.Args[1] {
 	case "human":
 		human.Parse(os.Args[2:])
-		fmt.Println(genHuman(*words, *separator, *capitalize))
+		pass = genHuman(*words, *separator, *capitalize)
 	case "random":
 		random.Parse(os.Args[2:])
-		fmt.Println(genRandom(*characters, *hasUpper, *hasNum, *hasSymb))
+		pass = genRandom(*characters, *hasUpper, *hasNum, *hasSymb)
 	case "pin":
 		pin.Parse(os.Args[2:])
-		fmt.Println(genPIN(*numbers))
+		pass = genPIN(*numbers)
 	default:
 		printHelp()
+	}
+
+	// Print and copy to clipboard
+	if pass != "" {
+		fmt.Println(pass)
+		// Automatically write new pass to clipboard
+		clipboard.WriteAll(pass)
 	}
 }
 

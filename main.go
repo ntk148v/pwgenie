@@ -67,8 +67,8 @@ func main() {
 	random := flag.NewFlagSet("random", flag.ExitOnError)
 	lenChars := random.Int("length", 8, "The number of characters in the generated password")
 	hasUpper := random.Bool("upper", false, "Enable the inclusion of upper-case letters in the generated passwords")
-	hasDigits := random.Bool("num", false, "Enable the inclusion of numbers in the generated password")
-	hasSymbols := random.Bool("symb", false, "Enable the inclusion of symbols in the generated password")
+	hasDigits := random.Bool("digit", false, "Enable the inclusion of numbers in the generated password")
+	hasSymbols := random.Bool("symbol", false, "Enable the inclusion of symbols in the generated password")
 	random.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Generate a random password with specified complexity\n\n")
 		fmt.Fprintf(os.Stderr, "Usage of '%s random':\n", os.Args[0])
@@ -82,7 +82,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Usage of '%s pin':\n", os.Args[0])
 		pin.PrintDefaults()
 	}
-	lenNum := pin.Int("length", 6, "The number of digits in the generated PIN code")
+	lenNums := pin.Int("length", 6, "The number of digits in the generated PIN code")
 
 	if len(os.Args) < 2 {
 		printHelp()
@@ -103,7 +103,7 @@ func main() {
 		pass = genRandom(r, *lenChars, *hasUpper, *hasDigits, *hasSymbols)
 	case "pin":
 		pin.Parse(os.Args[2:])
-		pass = genPIN(r, *lenNum)
+		pass = genPIN(r, *lenNums)
 	default:
 		printHelp()
 	}
@@ -203,16 +203,16 @@ func genRandom(r *rand.Rand, length int, hasUpper, hasDigits, hasSymbols bool) s
 
 // genPIN generates a PIN with the given number of numbers
 func genPIN(r *rand.Rand, num int) string {
-	var pass string
+	var result string
 
 	// Digits
 	for i := 0; i < num; i++ {
 		ch := randElement(r, Digits)
 		// TODO(kiennt2609): Check repeat!
-		pass = randInsert(r, pass, ch)
+		result = randInsert(r, result, ch)
 	}
 
-	return pass
+	return result
 }
 
 // randElement randonly gets an element from given string string

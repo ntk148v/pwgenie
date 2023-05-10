@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"math/rand"
@@ -61,6 +62,15 @@ Example
 	os.Exit(0)
 }
 
+func exitOnError(msg string) {
+	fmt.Fprintln(os.Stderr, msg)
+	os.Exit(1)
+}
+
+var (
+	ErrTooManyCharacters = errors.New("number of characters exceeds available letters and repeats are not allowed")
+)
+
 func main() {
 	allowRepeat := flag.Bool("allow-repeat", false, "Allow repeat characters in the generated password")
 	noClipboard := flag.Bool("no-clipboard", false, "Disable automatic copying of generated password to clipboard")
@@ -107,21 +117,28 @@ func main() {
 	// to generate other random values.
 	r := rand.New(rand.NewSource(time.Now().Unix()))
 
-	var pass string
+	var (
+		pass string
+		err  error
+	)
 
 	args := flag.Args()
 	switch args[0] {
 	case "human":
 		human.Parse(args[1:])
-		pass = genHuman(r, *words, *separator, *capitalize, *allowRepeat)
+		pass, err = genHuman(r, *words, *separator, *capitalize, *allowRepeat)
 	case "random":
 		random.Parse(args[1:])
-		pass = genRandom(r, *lenChars, *hasUpper, *hasDigits, *hasSymbols, *allowRepeat)
+		pass, err = genRandom(r, *lenChars, *hasUpper, *hasDigits, *hasSymbols, *allowRepeat)
 	case "pin":
 		pin.Parse(args[1:])
-		pass = genPIN(r, *lenNums, *allowRepeat)
+		pass, err = genPIN(r, *lenNums, *allowRepeat)
 	default:
 		printHelp()
+	}
+
+	if err != nil {
+		exitOnError(err.Error())
 	}
 
 	// Print and copy to clipboard
@@ -137,11 +154,16 @@ func main() {
 // genHuman generates a password with the given number of words, separated by the given
 // separator.
 // If capitalize is true, each word will be capitalized.
-func genHuman(r *rand.Rand, words int, separator string, capitalize, allowRepeat bool) string {
+func genHuman(r *rand.Rand, words int, separator string, capitalize, allowRepeat bool) (string, error) {
 	var (
 		formatted []string
 		result    string
 	)
+
+	if !allowRepeat && words > len(EFFWords) {
+		return result, ErrTooManyCharacters
+	}
+
 	// Multiple choices from word list
 	for i := 0; i < words; i++ {
 		word := EFFWords[r.Intn(len(EFFWords))]
@@ -162,13 +184,13 @@ func genHuman(r *rand.Rand, words int, separator string, capitalize, allowRepeat
 		result = cases.Title(language.English).String(result)
 	}
 
-	return result
+	return result, nil
 }
 
 // genRandom generates a password with the given number of characters
 // using the given character sets.
 // This follows Agiles 1Password: https://discussions.agilebits.com/discussion/23842/how-random-are-the-generated-passwords
-func genRandom(r *rand.Rand, length int, hasUpper, hasDigits, hasSymbols, allowRepeat bool) string {
+func genRandom(r *rand.Rand, length int, hasUpper, hasDigits, hasSymbols, allowRepeat bool) (string, error) {
 	var (
 		numLowerChars, numUpperChars, numDigits, numSymbols int
 		result                                              string
@@ -177,23 +199,27 @@ func genRandom(r *rand.Rand, length int, hasUpper, hasDigits, hasSymbols, allowR
 	if hasUpper {
 		// Randomly choice number of upper characters in result
 		// At least one upper character should be included in result
-		numUpperChars = r.Intn(length-4) + 1
+		numUpperChars = calculateNum(r, UpperLetters, length, 4, allowRepeat)
 	}
 
 	if hasDigits {
 		// Randomly choice number of digits in result
 		// At least one digit should be included in result
-		numDigits = r.Intn(length-numUpperChars-3) + 1
+		numDigits = calculateNum(r, Digits, length, numUpperChars+3, allowRepeat)
 	}
 
 	if hasSymbols {
 		// Randomly choice number of symbols in result
 		// At least one symbol should be included in result
-		numSymbols = r.Intn(length-numDigits-numUpperChars-2) + 1
+		numSymbols = calculateNum(r, Symbols, length, numDigits+numUpperChars+2, allowRepeat)
 	}
 
 	// the rest are lower character
 	numLowerChars = length - numDigits - numSymbols - numUpperChars
+
+	if !allowRepeat && numLowerChars > len(LowerLetters) {
+		return result, ErrTooManyCharacters
+	}
 
 	// Lower characters
 	for i := 0; i < numLowerChars; i++ {
@@ -243,12 +269,16 @@ func genRandom(r *rand.Rand, length int, hasUpper, hasDigits, hasSymbols, allowR
 		result = randInsert(r, result, ch)
 	}
 
-	return result
+	return result, nil
 }
 
 // genPIN generates a PIN with the given number of numbers
-func genPIN(r *rand.Rand, length int, allowRepeat bool) string {
+func genPIN(r *rand.Rand, length int, allowRepeat bool) (string, error) {
 	var result string
+
+	if !allowRepeat && length > len(Digits) {
+		return result, ErrTooManyCharacters
+	}
 
 	// Digits
 	for i := 0; i < length; i++ {
@@ -262,7 +292,20 @@ func genPIN(r *rand.Rand, length int, allowRepeat bool) string {
 		result = randInsert(r, result, ch)
 	}
 
-	return result
+	return result, nil
+}
+
+// calculateNum returns a number with conditional
+func calculateNum(r *rand.Rand, chars string, length, untouchSlot int, allowRepeat bool) int {
+	var num int
+	if allowRepeat {
+		num = r.Intn(length-untouchSlot) + 1
+	} else {
+		// try the best, include all available characters
+		// no more random
+		num = min(length-untouchSlot+1, len(chars))
+	}
+	return num
 }
 
 // randElement randonly gets an element from given string string
@@ -277,4 +320,12 @@ func randInsert(r *rand.Rand, s, e string) string {
 	}
 	pos := r.Intn(len(s) + 1)
 	return s[0:pos] + e + s[pos:]
+}
+
+// min returns a smaller number, that is
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

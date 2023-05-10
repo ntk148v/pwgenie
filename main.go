@@ -21,7 +21,16 @@ pwgenie is a simple password generator.
 Usage
 -----
 
-  pwgenie <SUBCOMMAND> [OPTIONS]
+  pwgenie [OPTIONS] <SUBCOMMAND> [SUBCOMMAND-OPTIONS]
+
+Options
+-------
+
+  -allow-repeat
+		Allow repeat characters in the generated password
+
+  -no-clipboard
+		Disable automatic copying of generated password to clipboard
 
 Subcommands
 -----------
@@ -52,6 +61,11 @@ Example
 }
 
 func main() {
+	allowRepeat := flag.Bool("allow-repeat", false, "Allow repeat characters in the generated password")
+	noClipboard := flag.Bool("no-clipboard", false, "Disable automatic copying of generated password to clipboard")
+	flag.Usage = printHelp
+	flag.Parse()
+
 	// Memorable password
 	human := flag.NewFlagSet("human", flag.ExitOnError)
 	human.Usage = func() {
@@ -94,16 +108,17 @@ func main() {
 
 	var pass string
 
-	switch os.Args[1] {
+	args := flag.Args()
+	switch args[0] {
 	case "human":
-		human.Parse(os.Args[2:])
-		pass = genHuman(r, *words, *separator, *capitalize)
+		human.Parse(args[1:])
+		pass = genHuman(r, *words, *separator, *capitalize, *allowRepeat)
 	case "random":
-		random.Parse(os.Args[2:])
-		pass = genRandom(r, *lenChars, *hasUpper, *hasDigits, *hasSymbols)
+		random.Parse(args[1:])
+		pass = genRandom(r, *lenChars, *hasUpper, *hasDigits, *hasSymbols, *allowRepeat)
 	case "pin":
-		pin.Parse(os.Args[2:])
-		pass = genPIN(r, *lenNums)
+		pin.Parse(args[1:])
+		pass = genPIN(r, *lenNums, *allowRepeat)
 	default:
 		printHelp()
 	}
@@ -111,15 +126,17 @@ func main() {
 	// Print and copy to clipboard
 	if pass != "" {
 		fmt.Println(pass)
-		// Automatically write new pass to clipboard
-		clipboard.WriteAll(pass)
+		if !*noClipboard {
+			// Automatically write new pass to clipboard
+			clipboard.WriteAll(pass)
+		}
 	}
 }
 
 // genHuman generates a password with the given number of words, separated by the given
 // separator.
 // If capitalize is true, each word will be capitalized.
-func genHuman(r *rand.Rand, words int, separator string, capitalize bool) string {
+func genHuman(r *rand.Rand, words int, separator string, capitalize, allowRepeat bool) string {
 	var (
 		formatted []string
 		result    string
@@ -143,7 +160,7 @@ func genHuman(r *rand.Rand, words int, separator string, capitalize bool) string
 // genRandom generates a password with the given number of characters
 // using the given character sets.
 // This follows Agiles 1Password: https://discussions.agilebits.com/discussion/23842/how-random-are-the-generated-passwords
-func genRandom(r *rand.Rand, length int, hasUpper, hasDigits, hasSymbols bool) string {
+func genRandom(r *rand.Rand, length int, hasUpper, hasDigits, hasSymbols, allowRepeat bool) string {
 	var (
 		numLowerChars, numUpperChars, numDigits, numSymbols int
 		result                                              string
@@ -202,11 +219,11 @@ func genRandom(r *rand.Rand, length int, hasUpper, hasDigits, hasSymbols bool) s
 }
 
 // genPIN generates a PIN with the given number of numbers
-func genPIN(r *rand.Rand, num int) string {
+func genPIN(r *rand.Rand, length int, allowRepeat bool) string {
 	var result string
 
 	// Digits
-	for i := 0; i < num; i++ {
+	for i := 0; i < length; i++ {
 		ch := randElement(r, Digits)
 		// TODO(kiennt2609): Check repeat!
 		result = randInsert(r, result, ch)

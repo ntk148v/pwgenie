@@ -125,7 +125,7 @@ $ pwgenie human -h
 
 Generate a human-friendly memorable password
 
-Usage of './dist/pwgenie_linux_amd64_v1/pwgenie human':
+Usage of 'pwgenie human':
   -cap
         Enable capitalization of each word in the generated password
   -sep string
@@ -146,7 +146,7 @@ Daredevil Malt Recycler Prior Mutual
 $ pwgenie random -h
 Generate a random password with specified complexity
 
-Usage of './dist/pwgenie_linux_amd64_v1/pwgenie random':
+Usage of 'pwgenie random':
   -digit
         Enable the inclusion of numbers in the generated password
   -length int
@@ -157,10 +157,10 @@ Usage of './dist/pwgenie_linux_amd64_v1/pwgenie random':
         Enable the inclusion of upper-case letters in the generated passwords
 
 $ pwgenie random -digit -symbol -upper
-2^ZVcJPF
+iJdNmD0*
 
-$ pwgenie random -digit -symbol -upper
-U2MAJzCNVDETHWLYGOP"
+$ pwgenie random -digit -symbol -upper -length 20
+LohapCbF_vzyuItDX91Z
 ```
 
 - Generate a PIN
@@ -169,7 +169,7 @@ U2MAJzCNVDETHWLYGOP"
 $ pwgenie pin -h
 Generate a random numeric PIN code
 
-Usage of './dist/pwgenie_linux_amd64_v1/pwgenie pin':
+Usage of 'pwgenie pin':
   -length int
         The number of digits in the generated PIN code (default 6)
 

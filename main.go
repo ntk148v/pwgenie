@@ -15,14 +15,15 @@
 package main
 
 import (
+	"crypto/rand"
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"math"
-	"math/rand"
+	"math/big"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/atotto/clipboard"
 	"golang.org/x/exp/slices"
@@ -130,9 +131,7 @@ func main() {
 		printHelp()
 	}
 
-	// Init Rand that uses random values from src
-	// to generate other random values.
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	r := rand.Reader
 
 	var (
 		pass string
@@ -171,7 +170,7 @@ func main() {
 // genHuman generates a password with the given number of words, separated by the given
 // separator.
 // If capitalize is true, each word will be capitalized.
-func genHuman(r *rand.Rand, words int, separator string, capitalize, allowRepeat bool) (string, error) {
+func genHuman(r io.Reader, words int, separator string, capitalize, allowRepeat bool) (string, error) {
 	var (
 		formatted []string
 		result    string
@@ -183,7 +182,11 @@ func genHuman(r *rand.Rand, words int, separator string, capitalize, allowRepeat
 
 	// Multiple choices from word list
 	for i := 0; i < words; i++ {
-		word := EFFWords[r.Intn(len(EFFWords))]
+		n, err := rand.Int(r, big.NewInt(int64(len(EFFWords))))
+		if err != nil {
+			return result, err
+		}
+		word := EFFWords[n.Int64()]
 
 		if !allowRepeat && slices.Contains(formatted, word) {
 			i--
@@ -207,7 +210,7 @@ func genHuman(r *rand.Rand, words int, separator string, capitalize, allowRepeat
 // genRandom generates a password with the given number of characters
 // using the given character sets.
 // This follows Agiles 1Password: https://discussions.agilebits.com/discussion/23842/how-random-are-the-generated-passwords
-func genRandom(r *rand.Rand, length int, hasUpper, hasDigits, hasSymbols, allowRepeat bool) (string, error) {
+func genRandom(r io.Reader, length int, hasUpper, hasDigits, hasSymbols, allowRepeat bool) (string, error) {
 	var (
 		maxChars, numLowerChars, numUpperChars, numDigits, numSymbols int
 		result                                                        string
@@ -243,57 +246,81 @@ func genRandom(r *rand.Rand, length int, hasUpper, hasDigits, hasSymbols, allowR
 
 	// Lower characters
 	for i := 0; i < numLowerChars; i++ {
-		ch := randElement(r, LowerLetters)
+		ch, err := randElement(r, LowerLetters)
+		if err != nil {
+			return result, err
+		}
 
 		if !allowRepeat && strings.Contains(result, ch) {
 			i--
 			continue
 		}
 
-		result = randInsert(r, result, ch)
+		result, err = randInsert(r, result, ch)
+		if err != nil {
+			return result, err
+		}
 	}
 
 	// Upper characters
 	for i := 0; i < numUpperChars; i++ {
-		ch := randElement(r, UpperLetters)
+		ch, err := randElement(r, UpperLetters)
+		if err != nil {
+			return result, err
+		}
 
 		if !allowRepeat && strings.Contains(result, ch) {
 			i--
 			continue
 		}
 
-		result = randInsert(r, result, ch)
+		result, err = randInsert(r, result, ch)
+		if err != nil {
+			return result, err
+		}
 	}
 
 	// Digits
 	for i := 0; i < numDigits; i++ {
-		ch := randElement(r, Digits)
+		ch, err := randElement(r, Digits)
+		if err != nil {
+			return result, err
+		}
 
 		if !allowRepeat && strings.Contains(result, ch) {
 			i--
 			continue
 		}
 
-		result = randInsert(r, result, ch)
+		result, err = randInsert(r, result, ch)
+		if err != nil {
+			return result, err
+		}
 	}
 
 	// Symbols
 	for i := 0; i < numSymbols; i++ {
-		ch := randElement(r, Symbols)
+		ch, err := randElement(r, Symbols)
+		if err != nil {
+			return result, err
+		}
 
 		if !allowRepeat && strings.Contains(result, ch) {
 			i--
 			continue
 		}
 
-		result = randInsert(r, result, ch)
+		result, err = randInsert(r, result, ch)
+		if err != nil {
+			return result, err
+		}
 	}
 
 	return result, nil
 }
 
 // genPIN generates a PIN with the given number of numbers
-func genPIN(r *rand.Rand, length int, allowRepeat bool) (string, error) {
+func genPIN(r io.Reader, length int, allowRepeat bool) (string, error) {
 	var result string
 
 	if !allowRepeat && length > len(Digits) {
@@ -302,31 +329,45 @@ func genPIN(r *rand.Rand, length int, allowRepeat bool) (string, error) {
 
 	// Digits
 	for i := 0; i < length; i++ {
-		ch := randElement(r, Digits)
+		ch, err := randElement(r, Digits)
+		if err != nil {
+			return result, err
+		}
 
 		if !allowRepeat && strings.Contains(result, ch) {
 			i--
 			continue
 		}
 
-		result = randInsert(r, result, ch)
+		result, err = randInsert(r, result, ch)
+		if err != nil {
+			return result, err
+		}
 	}
 
 	return result, nil
 }
 
 // randElement randonly gets an element from given string string
-func randElement(r *rand.Rand, s string) string {
-	return string(s[r.Intn(len(s))])
+func randElement(r io.Reader, s string) (string, error) {
+	n, err := rand.Int(r, big.NewInt(int64(len(s))))
+	if err != nil {
+		return "", err
+	}
+	return string(s[n.Int64()]), nil
 }
 
 // randInsert randonly insert an element into given string
-func randInsert(r *rand.Rand, s, e string) string {
+func randInsert(r io.Reader, s, e string) (string, error) {
 	if s == "" {
-		return e
+		return e, nil
 	}
-	pos := r.Intn(len(s) + 1)
-	return s[0:pos] + e + s[pos:]
+	n, err := rand.Int(r, big.NewInt(int64(len(s)+1)))
+	if err != nil {
+		return "", err
+	}
+	pos := n.Int64()
+	return s[0:pos] + e + s[pos:], nil
 }
 
 // calcNum calculate the number of letters

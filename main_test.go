@@ -15,16 +15,15 @@
 package main
 
 import (
+	"crypto/rand"
 	"errors"
-	"math/rand"
 	"strings"
 	"testing"
-
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 const N = 1000
+
+var r = rand.Reader
 
 func hasDuplicate(s []string) bool {
 	found := make(map[string]struct{}, len(s))
@@ -40,36 +39,6 @@ func hasDuplicate(s []string) bool {
 
 func Test_genHuman(t *testing.T) {
 	t.Parallel()
-
-	r := rand.New(rand.NewSource(69))
-	normal, _ := genHuman(r, 5, " ", false, false)
-
-	t.Run("separator", func(t *testing.T) {
-		t.Parallel()
-
-		r := rand.New(rand.NewSource(69))
-		res, err := genHuman(r, 5, "-", false, false)
-		if err != nil {
-			t.Error(err)
-		}
-		if strings.ReplaceAll(res, "-", " ") != normal {
-			t.Errorf("genHuman() = %v, not validated", res)
-		}
-	})
-
-	t.Run("capitalize", func(t *testing.T) {
-		t.Parallel()
-
-		r := rand.New(rand.NewSource(69))
-		res, err := genHuman(r, 5, " ", true, false)
-		if err != nil {
-			t.Error(err)
-		}
-
-		if cases.Title(language.English).String(normal) != res {
-			t.Errorf("%q not validated", res)
-		}
-	})
 
 	t.Run("no_repeat", func(t *testing.T) {
 		t.Parallel()
@@ -97,7 +66,6 @@ func Test_genHuman(t *testing.T) {
 
 func Test_genRandom(t *testing.T) {
 	t.Parallel()
-	r := rand.New(rand.NewSource(69))
 	t.Run("gen_lowercase", func(t *testing.T) {
 		t.Parallel()
 
@@ -174,7 +142,6 @@ func Test_genRandom(t *testing.T) {
 
 func Test_genPIN(t *testing.T) {
 	t.Parallel()
-	r := rand.New(rand.NewSource(69))
 
 	t.Run("gen_no_repeat", func(t *testing.T) {
 		t.Parallel()

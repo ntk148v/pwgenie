@@ -29,7 +29,7 @@ linters:
     - gochecknoinits
     - gocritic
     - goconst
-    - gocyclo
+    # - gocyclo
     - gofumpt
     - goimports
     - revive

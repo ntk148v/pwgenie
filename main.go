@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"math"
 	"math/rand"
 	"os"
 	"strings"
@@ -115,7 +116,7 @@ func main() {
 
 	// Init Rand that uses random values from src
 	// to generate other random values.
-	r := rand.New(rand.NewSource(time.Now().Unix()))
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	var (
 		pass string
@@ -192,34 +193,37 @@ func genHuman(r *rand.Rand, words int, separator string, capitalize, allowRepeat
 // This follows Agiles 1Password: https://discussions.agilebits.com/discussion/23842/how-random-are-the-generated-passwords
 func genRandom(r *rand.Rand, length int, hasUpper, hasDigits, hasSymbols, allowRepeat bool) (string, error) {
 	var (
-		numLowerChars, numUpperChars, numDigits, numSymbols int
-		result                                              string
+		maxChars, numLowerChars, numUpperChars, numDigits, numSymbols int
+		result                                                        string
 	)
 
+	maxChars += len(LowerLetters)
 	if hasUpper {
-		// Randomly choice number of upper characters in result
-		// At least one upper character should be included in result
-		numUpperChars = calculateNum(r, UpperLetters, length, 4, allowRepeat)
+		maxChars += len(UpperLetters)
+		numUpperChars = 1
 	}
 
 	if hasDigits {
-		// Randomly choice number of digits in result
-		// At least one digit should be included in result
-		numDigits = calculateNum(r, Digits, length, numUpperChars+3, allowRepeat)
+		maxChars += len(Digits)
+		numDigits = 1
 	}
 
 	if hasSymbols {
-		// Randomly choice number of symbols in result
-		// At least one symbol should be included in result
-		numSymbols = calculateNum(r, Symbols, length, numDigits+numUpperChars+2, allowRepeat)
+		maxChars += len(Symbols)
+		numSymbols = 1
 	}
 
-	// the rest are lower character
-	numLowerChars = length - numDigits - numSymbols - numUpperChars
-
-	if !allowRepeat && numLowerChars > len(LowerLetters) {
+	if !allowRepeat && maxChars < length {
 		return result, ErrTooManyCharacters
 	}
+
+	// calculate characters distributions
+	numUpperChars = calcNum(maxChars, len(UpperLetters), length, numUpperChars)
+	numDigits = calcNum(maxChars, len(Digits), length, numDigits)
+	numSymbols = calcNum(maxChars, len(Symbols), length, numSymbols)
+
+	// The rest is lowercase characters
+	numLowerChars = length - numUpperChars - numDigits - numSymbols
 
 	// Lower characters
 	for i := 0; i < numLowerChars; i++ {
@@ -295,19 +299,6 @@ func genPIN(r *rand.Rand, length int, allowRepeat bool) (string, error) {
 	return result, nil
 }
 
-// calculateNum returns a number with conditional
-func calculateNum(r *rand.Rand, chars string, length, untouchSlot int, allowRepeat bool) int {
-	var num int
-	if allowRepeat {
-		num = r.Intn(length-untouchSlot) + 1
-	} else {
-		// try the best, include all available characters
-		// no more random
-		num = min(length-untouchSlot+1, len(chars))
-	}
-	return num
-}
-
 // randElement randonly gets an element from given string string
 func randElement(r *rand.Rand, s string) string {
 	return string(s[r.Intn(len(s))])
@@ -322,10 +313,15 @@ func randInsert(r *rand.Rand, s, e string) string {
 	return s[0:pos] + e + s[pos:]
 }
 
-// min returns a smaller number, that is
-func min(a, b int) int {
-	if a < b {
-		return a
+// calcNum calculate the number of letters
+// based on character distribution in overall.
+func calcNum(total, avail, length, initVal int) int {
+	var result int
+
+	result = int(math.Floor(float64(avail) / float64(total) * float64(length)))
+	if result < 1 {
+		result = 1
 	}
-	return b
+
+	return result * initVal
 }

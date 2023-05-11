@@ -11,7 +11,9 @@ const (
 	Digits = "0123456789"
 
 	// Symbols is the list of symbols.
-	Symbols = "~!@#$%^&*()_+`-={}|[]\\:\"<>?,./"
+	// Previous value "~!@#$%^&*()_+`-={}|[]\\:\"<>?,./"
+	// See https://github.com/1Password/spg/pull/22 for rationale in choice of symbols
+	Symbols = "!@.-_*"
 )
 
 // EFF's wordlist - <https://www.eff.org/deeplinks/2016/07/new-wordlists-random-passphrases>

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// pwgenie is a simple package generator
 package main
 
 import (
@@ -84,7 +85,7 @@ func exitOnError(msg string) {
 }
 
 var (
-	// ErrLettersExceedsAvailable is the error returned with the number of letters
+	// ErrTooManyCharacters is the error returned with the number of letters
 	// exceeds the number of available letters and repeats are not allowed.
 	ErrTooManyCharacters = errors.New("number of characters exceeds available letters and repeats are not allowed")
 )

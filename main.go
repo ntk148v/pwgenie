@@ -1,3 +1,4 @@
+// pwgenie
 package main
 
 import (
@@ -69,6 +70,8 @@ func exitOnError(msg string) {
 }
 
 var (
+	// ErrLettersExceedsAvailable is the error returned with the number of letters
+	// exceeds the number of available letters and repeats are not allowed.
 	ErrTooManyCharacters = errors.New("number of characters exceeds available letters and repeats are not allowed")
 )
 
@@ -126,13 +129,13 @@ func main() {
 	args := flag.Args()
 	switch args[0] {
 	case "human":
-		human.Parse(args[1:])
+		_ = human.Parse(args[1:])
 		pass, err = genHuman(r, *words, *separator, *capitalize, *allowRepeat)
 	case "random":
-		random.Parse(args[1:])
+		_ = random.Parse(args[1:])
 		pass, err = genRandom(r, *lenChars, *hasUpper, *hasDigits, *hasSymbols, *allowRepeat)
 	case "pin":
-		pin.Parse(args[1:])
+		_ = pin.Parse(args[1:])
 		pass, err = genPIN(r, *lenNums, *allowRepeat)
 	default:
 		printHelp()
@@ -147,7 +150,7 @@ func main() {
 		fmt.Println(pass)
 		if !*noClipboard {
 			// Automatically write new pass to clipboard
-			clipboard.WriteAll(pass)
+			_ = clipboard.WriteAll(pass)
 		}
 	}
 }

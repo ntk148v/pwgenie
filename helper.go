@@ -16,7 +16,7 @@ const (
 	Symbols = "!@.-_*"
 )
 
-// EFF's wordlist - <https://www.eff.org/deeplinks/2016/07/new-wordlists-random-passphrases>
+// EFFWords (EFF's wordlist) <https://www.eff.org/deeplinks/2016/07/new-wordlists-random-passphrases>
 var EFFWords = []string{
 	"abacus",
 	"abdomen",

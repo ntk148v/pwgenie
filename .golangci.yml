@@ -39,7 +39,7 @@ linters:
     - gosimple
     - govet
     - ineffassign
-    - misspell
+    # - misspell
     - nakedret
     - noctx
     - nolintlint

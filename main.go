@@ -33,7 +33,7 @@ import (
 )
 
 func printHelp() {
-	var helpText = `
+	helpText := `
 pwgenie is a simple password generator.
 <https://github.com/ntk148v/pwgenie>
 
@@ -84,11 +84,9 @@ func exitOnError(msg string) {
 	os.Exit(1)
 }
 
-var (
-	// ErrTooManyCharacters is the error returned with the number of letters
-	// exceeds the number of available letters and repeats are not allowed.
-	ErrTooManyCharacters = errors.New("number of characters exceeds available letters and repeats are not allowed")
-)
+// ErrTooManyCharacters is the error returned with the number of letters
+// exceeds the number of available letters and repeats are not allowed.
+var ErrTooManyCharacters = errors.New("number of characters exceeds available letters and repeats are not allowed")
 
 func main() {
 	allowRepeat := flag.Bool("allow-repeat", false, "Allow repeat characters in the generated password")

@@ -1,9 +1,9 @@
 module github.com/ntk148v/pwgenie
 
-go 1.20
+go 1.23.0
 
 require (
 	github.com/atotto/clipboard v0.1.4
 	golang.org/x/exp v0.0.0-20230425010034-47ecfdc1ba53
-	golang.org/x/text v0.22.0
+	golang.org/x/text v0.25.0
 )
